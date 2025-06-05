@@ -3,6 +3,7 @@ package com.assignment.blogappservice.models;
 
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,6 +20,8 @@ public class User extends Base
     private String email;
     private String password;
 
+    @OneToMany(mappedBy = "createdBy", fetch = FetchType.LAZY)
     private List<Blog> blogs;
+
 }
 

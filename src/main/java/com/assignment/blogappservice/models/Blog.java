@@ -15,6 +15,6 @@ public class Blog extends Base
     @Column(length = 5000)
     private String content;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne (fetch = FetchType.LAZY)
     private User createdBy;
 }

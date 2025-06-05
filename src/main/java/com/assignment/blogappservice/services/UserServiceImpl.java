@@ -1,28 +1,76 @@
 package com.assignment.blogappservice.services;
 
+import com.assignment.blogappservice.models.Token;
 import com.assignment.blogappservice.models.User;
+import com.assignment.blogappservice.repositories.TokenRepository;
 import com.assignment.blogappservice.repositories.UserRepository;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService
 {
     UserRepository userRepository;
-    public UserServiceImpl(UserRepository userRepository){
+    BCryptPasswordEncoder bCryptPasswordEncoder;
+    TokenRepository tokenRepository;
+
+    public UserServiceImpl(UserRepository userRepository , BCryptPasswordEncoder bCryptPasswordEncoder , TokenRepository tokenRepository){
         this.userRepository = userRepository;
+        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+        this.tokenRepository = tokenRepository;
     }
 
     @Override
-    public User signup(String name, String email, String password) {
+    public User signUp(String name, String email, String password) {
         User user = new User();
         user.setName(name);
         user.setEmail(email);
-        user.setPassword(password);
-        return user;
+        user.setPassword(bCryptPasswordEncoder.encode(password));
+        return userRepository.save(user);
+    }
+
+
+    @Override
+    public Token login(String email, String password) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if(optionalUser.isEmpty()){
+            return null;
+        }
+        User user = optionalUser.get();
+        if(!bCryptPasswordEncoder.matches(password,user.getPassword())){
+            return null;
+        }
+        Token token = new Token();
+        token.setUser(user);
+        token.setValue(RandomStringUtils.randomAlphanumeric(128));
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DATE, 30);
+        Date date = calendar.getTime();
+
+        token.setExpiryAt(date);
+        return tokenRepository.save(token);
     }
 
     @Override
-    public User login(String email, String password) {
+    public void logout(String tokenValue) {
 
+    }
+
+    @Override
+    public User validateToken(String tokenValue)
+    {
+        Optional<Token> optionalToken = tokenRepository.findByValueAndDeletedAndExpiryAtGreaterThan(tokenValue, false, new Date());
+        if(optionalToken.isEmpty())
+        {
+            return null;
+        }
+
+        return optionalToken.get().getUser();
     }
 }
